@@ -17,11 +17,11 @@ YELLOW = stddraw.YELLOW
 GREEN = stddraw.GREEN
 RED = stddraw.RED
 
-# Global variables for aliens
+# Global variables for aliens & score
 radius = 20
 aliens = []
 move_x = 10
-move_y = 40
+move_y = 50
 score = 0
 
 # Alien Class
@@ -107,7 +107,7 @@ class Shooter:
         # Draw missiles
         for missile in self.missiles:
             missile.draw()
-
+# Missile Class
 class Missile:
     def __init__(self, x, y, angle):
         self.x = x                  # X position of the missile
@@ -137,7 +137,7 @@ def show_title_screen():
 
         # Draw title
         stddraw.setPenColor(YELLOW)
-        stddraw.setFontSize(74)  # Set font size for the title
+        stddraw.setFontSize(70)  # Set font size for the title
         stddraw.text(WIDTH / 2, HEIGHT * 3 / 4, "COSMIC CONQUESTORS")
 
         # Draw instructions
@@ -165,47 +165,56 @@ def show_title_screen():
         # Display Graphics
         stddraw.show(200) #time delay as argument
 def update_draw():
-    edge = False
+    edge = False #Boundary Condition: To detect the edge of the screen/canvas
     for alien in aliens:
-        if (alien.x >= 760 and alien.direction == 1) or (alien.x <= 40 and alien.direction == -1):
+        if (alien.x >= 760 and alien.direction == 1) or (alien.x <= 40 and alien.direction == -1): #Check if any aliens hit the wall
             edge = True
-            break
+            break #if the leading alien hits the edge all aliens will hit the edge
     for alien in aliens:
         if edge:               
-            alien.move(0, -move_y)
-            alien.direction *= -1
+            alien.move(0, -move_y) #update the x and y position of the aliens
+            alien.direction *= -1 #changes the direction
         else: 
             alien.move(alien.direction * move_x, 0)
     for alien in aliens:
-        alien.draw_alien() 
-aliens = Alien.create_grid()
-def hit(missiles, aliens):
+        alien.draw_alien() #draws the aliens
+
+def check_collision(missile, alien): 
+        
+        distance = math.sqrt((missile.x - alien.x) ** 2 + (missile.y - alien.y) ** 2) # Calculate the distance between the centers of the missile and alien
+
+        if distance < (3 + radius):  # If the distance is less than the missile radius + alien radius = colliding
+            return True
+
+def hit(missiles, aliens): 
     global score
-    for missile in missiles:
+    for missile in missiles: 
             for alien in aliens:
-                if check_collision(missile,alien):
+                if check_collision(missile,alien): 
                     missiles.remove(missile)
                     aliens.remove(alien)
                     score += 10
     return score
 
-        
-def check_collision(missile, alien):
-        # Calculate the distance between the centers of the missile and alien.
-        distance = math.sqrt((missile.x - alien.x) ** 2 + (missile.y - alien.y) ** 2)
-
-        # If the distance is less than the sum of the radii, they are colliding.
-        if distance < (3 + radius):  # Assuming missile radius is 3
+def game_check(aliens, shooter):
+    for alien in aliens:
+        closest_x = max(shooter.x, min(alien.x, shooter.x + 50))
+        closest_y = max(shooter.y, min(alien.y, shooter.y + 20))
+        distance = math.sqrt((closest_x - alien.x) ** 2 + (closest_y - alien.y) ** 2)
+        if distance < (radius + 10): #since alien can only collide on the edge of shooter, radius + distance to edge of shooter results in collision
             return True
-        else:
-            return False
+
 def play_game():
+    global aliens, score 
+    score = 0
     # Create stars for the game screen
     stars = [Star() for i in range(100)]
     # Create a shooter object
     shooter = Shooter(400, 50, 50, 20)  # Centered at the bottom
-    # Create Aliens object
-    game_over = 0 #1 for running game, 0 for paused game
+    # 0 for running game, 1 for game over
+    game_over = 0 
+    # Adds the each alien of the list to aliens
+    aliens.extend(Alien.create_grid())
     # Game loop
     while (not game_over):
         stddraw.clear(BLACK)
@@ -213,8 +222,6 @@ def play_game():
         # Draw stars
         for star in stars:
             star.draw()
-        # Draw aliens
-        
 
         # check for input
         if stddraw.hasNextKeyTyped():
@@ -242,9 +249,10 @@ def play_game():
         print(score)
         update_draw()
         shooter.draw()
-        stddraw.show(50)  # 50ms delay
-        if score == 150:
+        stddraw.show(10)  # 50ms delay
+        if score == 150 or game_check(aliens, shooter):
             game_over = 1
+            aliens.clear()
 
 def main():
     while True:
