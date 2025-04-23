@@ -4,6 +4,7 @@ import math
 import random
 import sys
 import time
+import threading
 import stdarray
 import stdaudio
 
@@ -36,10 +37,13 @@ keys_pressed = {
 }
 
 # Functions for Game Audio
+def play_sound_in_thread(samples):
+    stdaudio.playSamples(samples)
+
 def shooting_sound():
 
     sample_rate = 44100
-    duration = 0.3
+    duration = 0.15
     N = int(sample_rate * duration)
     samples = stdarray.create1D(N, 0.0)
 
@@ -51,12 +55,13 @@ def shooting_sound():
         envelope = 1.0 if i < N/10 else math.exp(-5.0 * (i - N/10)/N)
         samples[i] = envelope * (pew + noise) * 0.5
 
-    stdaudio.playSamples(samples)
+    sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
+    sound_thread.start()
 
 def explosion_sound():
 
     sample_rate = 22050  
-    duration = 0.5  
+    duration = 0.15  
     N = int(sample_rate * duration)
     samples = stdarray.create1D(N, 0.0)
 
@@ -79,7 +84,8 @@ def explosion_sound():
 
         samples[i] = envelope * (boom * 0.6 + crackle * 0.3 + noise) * 0.7
 
-    stdaudio.playSamples(samples)
+    sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
+    sound_thread.start()
 
 def gameover_sound():
 
@@ -101,7 +107,8 @@ def gameover_sound():
         wave = wave1 + wave2 + 0.3 * math.sin(2 * math.pi * t * freq1 * 1.5)
         samples[i] = wave * envelope * 0.5
 
-    stdaudio.playSamples(samples)
+    sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
+    sound_thread.start()
 
 def youwin_sound():
 
@@ -125,7 +132,8 @@ def youwin_sound():
         wave = wave1 + wave2 + wave3
         samples[i] = wave * envelope * 0.4
 
-    stdaudio.playSamples(samples)
+    sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
+    sound_thread.start()
 
 class Alien:
     def __init__(self, x, y):
