@@ -27,6 +27,14 @@ move_x = 10
 move_y = 40
 score = 0
 
+# Keys for toggle state
+keys_pressed = {
+    'a': False,  # Toggle left movement
+    'd': False,  # Toggle right movement
+    'e': False,  # Toggle rotate up
+    'r': False   # Toggle rotate down
+}
+
 # Functions for Game Audio
 def shooting_sound():
 
@@ -239,9 +247,9 @@ def show_title_screen():
         stddraw.setFontSize(36)  # Set font size for the instructions
         instructions = [
                 "Press SPACE to Play",
-                "A to Move Left, D to Move Right",
+                "A to Move/Stop Left, D to Move/Stop Right",
                 "Q to Quit",
-                "R to Rotate Right, E to Rotate Left",
+                "R to Rotate/Stop Right, E to Rotate/Stop Left",
                 "SPACE to SHOOT"
                 ]
 
@@ -315,21 +323,24 @@ def play_game():
 
 
         # check for input
-        if stddraw.hasNextKeyTyped():
+        while stddraw.hasNextKeyTyped():
             key = stddraw.nextKeyTyped()
-            if key == 'a':  # Move left
-                shooter.move_left()
-            elif key == 'd':  # Move right
-                shooter.move_right(WIDTH)
-            elif key == 'e':  # Rotate turret up
-                shooter.rotate_turret(10)
-            elif key == 'r':  # Rotate turret down 
-                shooter.rotate_turret(-10)
+            if key in keys_pressed:
+                keys_pressed[key] = not keys_pressed[key]
             elif key == ' ' and (current_time - last_shot_time >= cooldown):  # Shoot missile
                 shooter.shoot_missile()
                 last_shot_time = current_time # Reset cooldown
             elif key == 'q':  # Quit game
                 return
+
+        if keys_pressed['a']:  
+            shooter.move_left() # Toggle left movement
+        if keys_pressed['d']:  
+            shooter.move_right(WIDTH) # Toggle right movement
+        if keys_pressed['e']:  
+            shooter.rotate_turret(5) # Toggle Anti-Clockwise rotation
+        if keys_pressed['r']:  
+            shooter.rotate_turret(-5) # Toggle Clockwise rotation        
 
         # Update missiles
         for missile in shooter.missiles:
