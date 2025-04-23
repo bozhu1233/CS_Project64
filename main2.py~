@@ -286,6 +286,7 @@ def hit(missiles, aliens):
     for missile in missiles:
         for alien in aliens:
             if check_collision(missile,alien):
+                explosion_sound()
                 missiles.remove(missile)
                 aliens.remove(alien)
                 score += 10
@@ -308,6 +309,73 @@ def check_collision(missile, alien):
             return True
         else:
             return False
+
+def lose_screen(score):
+
+    stars = [Star() for i in range(100)]
+    
+    while True:
+        stddraw.clear(BLACK)
+
+        for star in stars:
+            star.draw()
+
+        stddraw.setPenColor(RED)
+        stddraw.setFontSize(40)
+        stddraw.text(WIDTH/2, HEIGHT/2, "GAME OVER")
+        
+        # Score display
+        stddraw.setPenColor(WHITE)
+        stddraw.setFontSize(20)
+        stddraw.text(WIDTH/2, HEIGHT/2 - 30, f"Score: {score}")
+        
+        # Instructions
+        stddraw.text(WIDTH/2, HEIGHT/2 - 60, "Press 'R' to restart")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 90, "Press 'Q' to quit")
+        
+        stddraw.show(20)
+
+        if stddraw.hasNextKeyTyped():
+            key = stddraw.nextKeyTyped().lower()
+            if key == 'r':
+                return True
+            elif key == 'q':
+                sys.exit()
+
+def victory_screen(score):
+
+    stars = [Star() for i in range(100)]
+    
+    while True: 
+        stddraw.clear(BLACK)
+
+        for star in stars:
+            star.draw()
+        
+        # Victory text
+        stddraw.setPenColor(GREEN)
+        stddraw.setFontSize(40)
+        stddraw.text(WIDTH/2, HEIGHT/2, "YOU WIN!")
+        
+        # Score display
+        stddraw.setPenColor(WHITE)
+        stddraw.setFontSize(20)
+        stddraw.text(WIDTH/2, HEIGHT/2 - 30, f"Score: {score}")
+        
+        # Instructions
+        stddraw.text(WIDTH/2, HEIGHT/2 - 60, "Press 'R' to play again")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 90, "Press 'Q' to quit")
+        
+        stddraw.show(20)
+
+        if stddraw.hasNextKeyTyped():
+            key = stddraw.nextKeyTyped().lower()
+            if key == 'r':
+                return True
+            elif key == 'q':
+                sys.exit()
+
+
 def play_game():
     global aliens, score 
     score = 0
@@ -338,6 +406,7 @@ def play_game():
             if key in keys_pressed:
                 keys_pressed[key] = not keys_pressed[key]
             elif key == ' ' and (current_time - last_shot_time >= cooldown):  # Shoot missile
+                shooting_sound()
                 shooter.shoot_missile()
                 last_shot_time = current_time # Reset cooldown
             elif key == 'q':  # Quit game
@@ -365,7 +434,16 @@ def play_game():
         stddraw.show(10)  # 50ms delay
         if score == 150 or game_check(aliens, shooter):
             game_over = 1
-            aliens.clear()
+            aliens.clear() 
+
+            if game_over == 1:
+                gameover_sound()
+                lose_screen(score)
+
+            else: 
+                youwin_sound()
+                victory_screen(score)
+
 
 def main():
     while True:
