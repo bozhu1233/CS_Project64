@@ -315,7 +315,8 @@ def play_game():
     stars = [Star() for i in range(100)]
     # Create a shooter object
     shooter = Shooter(400, 50, 50, 20)  # Centered at the bottom
-    # Create Aliens object
+    # Adds the each alien of the list to aliens
+    aliens.extend(Alien.create_grid())# Create Aliens object
     game_over = 0 #1 for running game, 0 for paused game
     # Time dimentions for fire rate
     last_shot_time = 0
