@@ -287,8 +287,8 @@ def hit(missiles, aliens):
         for alien in aliens:
             if check_collision(missile,alien):
                 missiles.remove(missile)
-                    aliens.remove(alien)
-                    score += 10
+                aliens.remove(alien)
+                score += 10
     return score
 
 def game_check(aliens, shooter):
