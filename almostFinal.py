@@ -41,11 +41,12 @@ keys_pressed = {
     'r': False   # Toggle rotate down
 }
 
+
 # Functions for Game Audio
-def play_sound_in_thread(samples):
+def play_sound_in_thread(samples):#Fortunate
     stdaudio.playSamples(samples)
 
-def shooting_sound():
+def shooting_sound():#Fortunate
 
     sample_rate = 44100
     duration = 0.15
@@ -63,7 +64,7 @@ def shooting_sound():
     sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
     sound_thread.start()
 
-def explosion_sound():
+def explosion_sound():#Fortunate
 
     sample_rate = 22050  
     duration = 0.15  
@@ -92,7 +93,7 @@ def explosion_sound():
     sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
     sound_thread.start()
 
-def gameover_sound():
+def gameover_sound():#Fortunate
 
     sample_rate = 44100
     duration = 3.0  
@@ -115,7 +116,7 @@ def gameover_sound():
     sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
     sound_thread.start()
 
-def youwin_sound():
+def youwin_sound():#Fortunate
 
     sample_rate = 44100
     duration = 2.5  
@@ -364,7 +365,7 @@ def check_collision(missile, alien): #Boheng
         else:
             return False
 
-def lose_screen(score):
+def lose_screen(score):#Fortunate
 
     stars = [Star() for i in range(100)]
     
@@ -396,7 +397,7 @@ def lose_screen(score):
             elif key == 'q':
                 sys.exit()
 
-def victory_screen(score):
+def victory_screen(score):#Fortunate
 
     stars = [Star() for i in range(100)]
     
