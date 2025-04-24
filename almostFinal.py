@@ -187,7 +187,7 @@ class Alien:
         return grid
 
 # Star class for twinkling stars 
-class Star:
+class Star: #Rowan
     def __init__(self):
         self.x = random.uniform(0, WIDTH)
         self.y = random.uniform(0, HEIGHT)
@@ -201,7 +201,7 @@ class Star:
         self.twinkle = (self.twinkle + 1) % 100
 
 # Shooter class for the turret
-class Shooter:
+class Shooter: # Rowan
     def __init__(self, x, y, width, height):
         self.x = x   # X position of the shooter
         self.y = y   # Y position of the shooter
@@ -247,7 +247,7 @@ class Shooter:
         for missile in self.missiles:
             missile.draw()
 
-class Missile:
+class Missile: # Rowan
     def __init__(self, x, y, angle):
         self.x = x                  # X position of the missile
         self.y = y                  # Y position of the missile
@@ -277,7 +277,7 @@ class Game:
     def scoring(self):
         return (10 * self.level)
 
-def show_title_screen():
+def show_title_screen(): # Rowan
     stars = [Star() for i in range(100)]
 
     while True:
@@ -457,7 +457,7 @@ def find_highscore(score_history):
     else:
         return 0  # Return 0 if there are no scores yet
 game = Game()
-def play_game():
+def play_game(): # Group Effort
     global aliens, score
     #Game state
     game.over = 0
