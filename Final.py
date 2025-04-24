@@ -522,11 +522,12 @@ def play_game(): # Group Effort
 
          # Draw shooter and missiles
         score = hit(shooter.missiles, aliens, game.points)
+        alien_update(move_x)
+        shooter.draw()
+        stddraw.setPenColor(WHITE)
         stddraw.setFontSize(30)
         stddraw.text(700, 580, f"Score: {score}")
         stddraw.text(100, 60, f"Level: {game.level}")
-        alien_update(move_x)
-        shooter.draw()
         stddraw.show(50)  # 50ms delay
         if (not aliens):
             game.level += 1
