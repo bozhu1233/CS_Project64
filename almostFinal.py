@@ -118,25 +118,49 @@ def gameover_sound():
 def youwin_sound():
 
     sample_rate = 44100
-    duration = 3.5  
+    duration = 2.5  
     N = int(sample_rate * duration)
     samples = stdarray.create1D(N, 0.0)
 
-    for i in range(N):
-        t = i / sample_rate
-
-        freq1 = 300.0 + 400.0 * (i/N)
-        freq2 = 450.0 + 300.0 * (i/N)
-        freq3 = 600.0 + 200.0 * (i/N)
-        wave1 = math.sin(2 * math.pi * t * freq1)
-        wave2 = 0.6 * math.sin(2 * math.pi * t * freq2)
-        wave3 = 0.4 * math.sin(2 * math.pi * t * freq3)
-
-        envelope = (0.5 + 0.5 * math.sin(2 * math.pi * t * 2)) * math.exp(-0.3 * i/N)
-
-        wave = wave1 + wave2 + wave3
-        samples[i] = wave * envelope * 0.4
-
+    notes = [
+        (1046.50, 0.2),  # C6 (high)
+        (1318.51, 0.2),   # E6 
+        (1567.98, 0.3),   # G6
+        (2093.00, 0.5)    # C7 (very high)
+    ]
+    
+    position = 0
+    for freq, note_length in notes:
+        note_samples = int(note_length * sample_rate)
+        end = min(position + note_samples, N)
+        
+        for i in range(position, end):
+            t = (i - position) / sample_rate
+            
+            wave = (math.sin(2 * math.pi * t * freq) +
+                   0.7 * math.sin(2 * math.pi * t * freq * 2.5) +  # Higher harmonic
+                   0.4 * math.sin(2 * math.pi * t * freq * 4.2))   # Non-integer harmonic
+            
+            # Sharp envelope (quick attack, quick decay)
+            attack = min(1.0, t/0.01)  #Very quick attack
+            decay = math.exp(-t * 10)   #Quick decay
+            envelope = attack * decay
+            
+            samples[i] += wave * envelope * 0.5
+        
+        position += note_samples
+    
+    #sparkling high-frequency ending
+    sparkle_duration = 0.8
+    sparkle_samples = int(sparkle_duration * sample_rate)
+    for i in range(position, min(position + sparkle_samples, N)):
+        t = (i - position) / sample_rate
+        sparkle_freq = 3000 + 2000 * math.sin(t * 20)  # Wavering high frequency
+        
+        wave = math.sin(2 * math.pi * t * sparkle_freq)
+        envelope = math.exp(-t * 4)  # Fade
+        samples[i] += wave * envelope * 0.3
+  
     sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
     sound_thread.start()
 
@@ -355,10 +379,10 @@ def lose_screen(score):
         stddraw.setPenColor(WHITE)
         stddraw.setFontSize(20)
         stddraw.text(WIDTH/2, HEIGHT/2 - 30, f"Score: {score}")
-        
+        stddraw.text(WIDTH/2, HEIGHT/2 - 60, f"High Score: {find_highscore(load_score_history())}")
         # Instructions
-        stddraw.text(WIDTH/2, HEIGHT/2 - 60, "Press 'R' to restart")
-        stddraw.text(WIDTH/2, HEIGHT/2 - 90, "Press 'Q' to quit")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 90, "Press 'R' to restart")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 120, "Press 'Q' to quit")
         
         stddraw.show(20)
 
@@ -388,10 +412,11 @@ def victory_screen(score):
         stddraw.setPenColor(WHITE)
         stddraw.setFontSize(20)
         stddraw.text(WIDTH/2, HEIGHT/2 - 30, f"Score: {score}")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 60, f"High Score: {find_highscore(load_score_history())}")
         
         # Instructions
-        stddraw.text(WIDTH/2, HEIGHT/2 - 60, "Press 'R' to play again")
-        stddraw.text(WIDTH/2, HEIGHT/2 - 90, "Press 'Q' to quit")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 90, "Press 'R' to play again")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 120, "Press 'Q' to quit")
         
         stddraw.show(20)
 
@@ -401,10 +426,39 @@ def victory_screen(score):
                 return True
             elif key == 'q':
                 sys.exit()
+def load_score_history():
+    #Load all the scores from the text file to the list score_history
+    score_history = []
+    try:
+        with open("highscore.txt", "r") as file:
+            for line in file:
+                try:
+                    score = int(line.strip())
+                    score_history.append(score)
+                except ValueError:
+                    print(f"Warning: Invalid score '{line.strip()}' in score history file.")
+    # Does fail if file doesn't exist yet
+    except FileNotFoundError:
+        pass  
+    return score_history
 
+def save_score(score):
+    #saves the score of the game to a text file
+    try:
+        with open("highscore.txt", "a") as file:
+            file.write(f"{score}\n")  # Write score on a new line
+    except IOError:
+        print("Error writing to score history file!")
+
+def find_highscore(score_history):
+    #Finds the highest score from the score history
+    if score_history:  # Check if the list is not empty
+        return max(score_history)
+    else:
+        return 0  # Return 0 if there are no scores yet
 game = Game()
 def play_game():
-    global aliens, score, game
+    global aliens, score
     #Game state
     game.over = 0
     game.level = 1
@@ -417,7 +471,7 @@ def play_game():
     aliens.extend(Alien.create_grid(game.row, game.col))
     # Time dimentions for fire rate
     last_shot_time = 0
-    cooldown = 0.4
+    cooldown = 0
     # Game loop
     while (not game.over):
         stddraw.clear(BLACK)
@@ -469,21 +523,34 @@ def play_game():
         stddraw.text(100, 60, f"Level: {game.level}")
         alien_update(move_x)
         shooter.draw()
-        stddraw.show(10)  # 50ms delay
+        stddraw.show(50)  # 50ms delay
         if (not aliens):
             game.level += 1
             game.row += 1
             game.col += 1
             game.points = game.scoring()
+            # If level 3 is beaten you win
+            if (game.level == 4):
+                game.over = 1
+                game.level = 1
+                game.row = 2
+                game.col = 4
+                game.points = 10
+                save_score(score)
+                youwin_sound()
+                victory_screen(score)
+                score = 0
+                break
             # Displays Game level for 2 second
             youwin_sound()
             stddraw.setPenColor(YELLOW)
             stddraw.setFontSize(48)
             stddraw.text(WIDTH / 2, HEIGHT / 2, f"Level {game.level}")
             stddraw.show(3000)
-            #victory_screen(score)
+            
             aliens.extend(Alien.create_grid(game.row, game.col)) # Create new aliens for the next level
             move_x = game.alien_movex() # Adjusts the movement speed
+
         elif game_check(aliens, shooter) or any(alien.y < 100 for alien in aliens):
             game.over = 1
             game.level = 1
@@ -491,9 +558,13 @@ def play_game():
             game.col = 4
             game.points = 10
             gameover_sound()
+            save_score(score)
             lose_screen(score)
             score = 0
             aliens.clear()
+
+        
+        
             
            
 
