@@ -164,7 +164,7 @@ def youwin_sound():
     sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
     sound_thread.start()
 
-class Alien:
+class Alien: #Boheng
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -262,8 +262,9 @@ class Missile: # Rowan
     def draw(self):
         # Draw the missile
         stddraw.picture(missile_pic, self.x , self.y, 20, 20)
-class Game:
-    def __init__(self):
+class Game: #Boheng
+    def __init__(self): 
+        #Create elements of level, points, base alien movement, game over state, base rows and columns
         self.level = 1
         self.points = 10
         self.alien_x = 10
@@ -316,7 +317,8 @@ def show_title_screen(): # Rowan
 
         # Display Graphics
         stddraw.show(200) #time delay as argument
-def alien_update(move_x):
+        
+def alien_update(move_x): #Boheng
     edge = False #Boundary Condition: To detect the edge of the screen/canvas
     for alien in aliens:
         if (alien.x >= 760 and alien.direction == 1) or (alien.x <= 40 and alien.direction == -1): #Check if any aliens hit the wall
@@ -331,26 +333,27 @@ def alien_update(move_x):
     for alien in aliens:
         alien.draw_alien() #draws the aliens
 
-def hit(missiles, aliens, points):
+def hit(missiles, aliens, points): #Boheng
     global score
     for missile in missiles:
         for alien in aliens:
-            if check_collision(missile,alien):
+            if check_collision(missile,alien): #if collision is made, remove both elements, add explosion sound
                 explosion_sound()
                 missiles.remove(missile)
                 aliens.remove(alien)
                 score += points
     return score
 
-def game_check(aliens, shooter):
-    for alien in aliens:
+def game_check(aliens, shooter): #Boheng
+    #checks collision between shooter and aliens
+    for alien in aliens: 
         closest_x = max(shooter.x, min(alien.x, shooter.x + 50))
         closest_y = max(shooter.y, min(alien.y, shooter.y + 20))
         distance = math.sqrt((closest_x - alien.x) ** 2 + (closest_y - alien.y) ** 2)
         if distance < (radius + 10): #since alien can only collide on the edge of shooter, radius + distance to edge of shooter results in collision
             return True
 
-def check_collision(missile, alien):
+def check_collision(missile, alien): #Boheng
     # Calculate the distance between the centers of the missile and alien.
         distance = math.sqrt((missile.x - alien.x) ** 2 + (missile.y - alien.y) ** 2)
 
@@ -426,7 +429,7 @@ def victory_screen(score):
                 return True
             elif key == 'q':
                 sys.exit()
-def load_score_history():
+def load_score_history(): #Boheng
     #Load all the scores from the text file to the list score_history
     score_history = []
     try:
@@ -442,7 +445,7 @@ def load_score_history():
         pass  
     return score_history
 
-def save_score(score):
+def save_score(score): #Boheng
     #saves the score of the game to a text file
     try:
         with open("highscore.txt", "a") as file:
@@ -450,7 +453,7 @@ def save_score(score):
     except IOError:
         print("Error writing to score history file!")
 
-def find_highscore(score_history):
+def find_highscore(score_history): #Boheng
     #Finds the highest score from the score history
     if score_history:  # Check if the list is not empty
         return max(score_history)
