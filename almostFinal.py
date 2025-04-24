@@ -471,7 +471,7 @@ def play_game():
     aliens.extend(Alien.create_grid(game.row, game.col))
     # Time dimentions for fire rate
     last_shot_time = 0
-    cooldown = 0
+    cooldown = 0.4
     # Game loop
     while (not game.over):
         stddraw.clear(BLACK)
