@@ -4,6 +4,7 @@ import math
 import random
 import sys
 import time
+import threading
 import stdarray
 import stdaudio
 from picture import Picture
@@ -29,7 +30,9 @@ score = 0
 # Images for the elements
 alien_pic = Picture("alien.png")
 missile_pic = Picture("missile.png")
+boom_pic = Picture("boom.png")
 shooter_pic = Picture("shooter.png")
+
 # Keys for toggle state
 keys_pressed = {
     'a': False,  # Toggle left movement
@@ -39,10 +42,13 @@ keys_pressed = {
 }
 
 # Functions for Game Audio
+def play_sound_in_thread(samples):
+    stdaudio.playSamples(samples)
+
 def shooting_sound():
 
     sample_rate = 44100
-    duration = 0.3
+    duration = 0.15
     N = int(sample_rate * duration)
     samples = stdarray.create1D(N, 0.0)
 
@@ -53,12 +59,14 @@ def shooting_sound():
         noise = (random.random() * 2 - 1) * 0.1
         envelope = 1.0 if i < N/10 else math.exp(-5.0 * (i - N/10)/N)
         samples[i] = envelope * (pew + noise) * 0.5
-    stdaudio.playSamples(samples)
+
+    sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
+    sound_thread.start()
 
 def explosion_sound():
 
     sample_rate = 22050  
-    duration = 0.5  
+    duration = 0.15  
     N = int(sample_rate * duration)
     samples = stdarray.create1D(N, 0.0)
 
@@ -81,7 +89,8 @@ def explosion_sound():
 
         samples[i] = envelope * (boom * 0.6 + crackle * 0.3 + noise) * 0.7
 
-    stdaudio.playSamples(samples)
+    sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
+    sound_thread.start()
 
 def gameover_sound():
 
@@ -103,7 +112,8 @@ def gameover_sound():
         wave = wave1 + wave2 + 0.3 * math.sin(2 * math.pi * t * freq1 * 1.5)
         samples[i] = wave * envelope * 0.5
 
-    stdaudio.playSamples(samples)
+    sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
+    sound_thread.start()
 
 def youwin_sound():
 
@@ -127,7 +137,8 @@ def youwin_sound():
         wave = wave1 + wave2 + wave3
         samples[i] = wave * envelope * 0.4
 
-    stdaudio.playSamples(samples)
+    sound_thread = threading.Thread(target=play_sound_in_thread, args=(samples,))
+    sound_thread.start()
 
 class Alien:
     def __init__(self, x, y):
@@ -140,11 +151,9 @@ class Alien:
         self.y += dy
 
     def draw_alien(self):
-        stddraw.setPenColor(WHITE)
-        #stddraw.filledCircle(self.x, self.y, radius)
         stddraw.picture(alien_pic, self.x, self.y, radius*2, radius*2)
 
-    def create_grid(rows, cols):
+    def create_grid(rows=3, cols=5):
         grid = []
         for i in range(rows): #creates a grid of aliens of rows x cols
             for j in range(cols):
@@ -201,11 +210,11 @@ class Shooter:
         missile_y = self.y + self.height
         missile_angle = math.radians(self.turret_angle)  
         self.missiles.append(Missile(missile_x, missile_y, missile_angle))
-        
+
     def draw(self):
         stddraw.setPenColor(GREEN)
-        #stddraw.picture(shooter_pic, self.x , self.y, self.width, self.height)
-        stddraw.rectangle(self.x, self.y, self.width, self.height)
+        # Adjusting for scaled image
+        stddraw.picture(shooter_pic, self.x + self.width / 2.05, self.y + self.height/2, self.width, self.height)
         turret_length = 30
         turret_end_x = self.x + self.width / 2 + turret_length * math.cos(math.radians(self.turret_angle))
         turret_end_y = self.y + self.height + turret_length * math.sin(math.radians(self.turret_angle))
@@ -234,15 +243,15 @@ class Game:
         self.level = 1
         self.points = 10
         self.alien_x = 10
-        self.state = 0
         self.over = 0
         self.row = 2
         self.col = 4
     def alien_movex(self):
-        return self.alien_x * (1 + (self.level - 1) * 0.2)
+        #increases the speed of alien by 10% per round
+        return self.alien_x * (1 + (self.level - 1) * 0.1)
+        #each alien worth more points per level
     def scoring(self):
         return (10 * self.level)
-
 
 def show_title_screen():
     stars = [Star() for i in range(100)]
@@ -283,7 +292,7 @@ def show_title_screen():
 
         # Display Graphics
         stddraw.show(200) #time delay as argument
-def update_draw(move_x):
+def alien_update(move_x):
     edge = False #Boundary Condition: To detect the edge of the screen/canvas
     for alien in aliens:
         if (alien.x >= 760 and alien.direction == 1) or (alien.x <= 40 and alien.direction == -1): #Check if any aliens hit the wall
@@ -303,6 +312,7 @@ def hit(missiles, aliens, points):
     for missile in missiles:
         for alien in aliens:
             if check_collision(missile,alien):
+                explosion_sound()
                 missiles.remove(missile)
                 aliens.remove(alien)
                 score += points
@@ -321,12 +331,78 @@ def check_collision(missile, alien):
         distance = math.sqrt((missile.x - alien.x) ** 2 + (missile.y - alien.y) ** 2)
 
         # If the distance is less than the sum of the radii, they are colliding.
-        if distance < (3 + radius):  # Assuming missile radius is 3
+        if distance < (3 + radius): 
+            stddraw.picture(boom_pic, alien.x , alien.y, 40, 40) # Displays an explosion image
             return True
         else:
             return False
-game = Game()
 
+def lose_screen(score):
+
+    stars = [Star() for i in range(100)]
+    
+    while True:
+        stddraw.clear(BLACK)
+
+        for star in stars:
+            star.draw()
+
+        stddraw.setPenColor(RED)
+        stddraw.setFontSize(40)
+        stddraw.text(WIDTH/2, HEIGHT/2, "GAME OVER")
+        
+        # Score display
+        stddraw.setPenColor(WHITE)
+        stddraw.setFontSize(20)
+        stddraw.text(WIDTH/2, HEIGHT/2 - 30, f"Score: {score}")
+        
+        # Instructions
+        stddraw.text(WIDTH/2, HEIGHT/2 - 60, "Press 'R' to restart")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 90, "Press 'Q' to quit")
+        
+        stddraw.show(20)
+
+        if stddraw.hasNextKeyTyped():
+            key = stddraw.nextKeyTyped().lower()
+            if key == 'r':
+                return True
+            elif key == 'q':
+                sys.exit()
+
+def victory_screen(score):
+
+    stars = [Star() for i in range(100)]
+    
+    while True: 
+        stddraw.clear(BLACK)
+
+        for star in stars:
+            star.draw()
+        
+        # Victory text
+        stddraw.setPenColor(GREEN)
+        stddraw.setFontSize(40)
+        stddraw.text(WIDTH/2, HEIGHT/2, "YOU WIN!")
+        
+        # Score display
+        stddraw.setPenColor(WHITE)
+        stddraw.setFontSize(20)
+        stddraw.text(WIDTH/2, HEIGHT/2 - 30, f"Score: {score}")
+        
+        # Instructions
+        stddraw.text(WIDTH/2, HEIGHT/2 - 60, "Press 'R' to play again")
+        stddraw.text(WIDTH/2, HEIGHT/2 - 90, "Press 'Q' to quit")
+        
+        stddraw.show(20)
+
+        if stddraw.hasNextKeyTyped():
+            key = stddraw.nextKeyTyped().lower()
+            if key == 'r':
+                return True
+            elif key == 'q':
+                sys.exit()
+
+game = Game()
 def play_game():
     global aliens, score, game
     #Game state
@@ -336,15 +412,14 @@ def play_game():
     # Create stars for the game screen
     stars = [Star() for i in range(100)]
     # Create a shooter object
-    shooter = Shooter(400, 50, 50, 20)  # Centered at the bottom
+    shooter = Shooter(400, 50, 100, 50)  # Centered at the bottom
     # Adds the each alien of the list to aliens
     aliens.extend(Alien.create_grid(game.row, game.col))
     # Time dimentions for fire rate
     last_shot_time = 0
-    cooldown = 0
+    cooldown = 0.4
     # Game loop
     while (not game.over):
-        #Scoring and points
         stddraw.clear(BLACK)
 
         # Draw stars
@@ -360,6 +435,7 @@ def play_game():
             if key in keys_pressed:
                 keys_pressed[key] = not keys_pressed[key]
             elif key == ' ' and (current_time - last_shot_time >= cooldown):  # Shoot missile
+                shooting_sound()
                 shooter.shoot_missile()
                 last_shot_time = current_time # Reset cooldown
             elif key == 'q':  # Quit game
@@ -388,28 +464,38 @@ def play_game():
 
          # Draw shooter and missiles
         score = hit(shooter.missiles, aliens, game.points)
+        stddraw.setFontSize(30)
         stddraw.text(700, 580, f"Score: {score}")
-        update_draw(move_x)
+        stddraw.text(100, 60, f"Level: {game.level}")
+        alien_update(move_x)
         shooter.draw()
         stddraw.show(10)  # 50ms delay
         if (not aliens):
             game.level += 1
             game.row += 1
             game.col += 1
-            print("game level: " , game.level)
-            print("game points: ", game.points)
             game.points = game.scoring()
-            print("game scoring: ", game.scoring())
+            # Displays Game level for 2 second
+            youwin_sound()
+            stddraw.setPenColor(YELLOW)
+            stddraw.setFontSize(48)
+            stddraw.text(WIDTH / 2, HEIGHT / 2, f"Level {game.level}")
+            stddraw.show(3000)
+            #victory_screen(score)
             aliens.extend(Alien.create_grid(game.row, game.col)) # Create new aliens for the next level
-            move_x = game.alien_movex()
+            move_x = game.alien_movex() # Adjusts the movement speed
         elif game_check(aliens, shooter) or any(alien.y < 100 for alien in aliens):
             game.over = 1
             game.level = 1
             game.row = 2
             game.col = 4
             game.points = 10
+            gameover_sound()
+            lose_screen(score)
             score = 0
             aliens.clear()
+            
+           
 
 def main():
     while True:
